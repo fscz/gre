@@ -1,0 +1,5 @@
+CREATE build/libgre.a
+ADDLIB lib/libgdsl.a
+ADDMOD *.o
+SAVE
+END
