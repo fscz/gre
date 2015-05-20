@@ -598,7 +598,7 @@ PyGRE_Scene_dealloc(PyGRE_Scene* self) {
 }
 
 static void PyGRE_Scene_updateFunction(void* userData, unsigned long long missed) {
-  PyObject* result = PyObject_CallMethod((PyObject*)userData, "update", "(K)", missed);
+  PyObject* result = PyObject_CallMethod((PyObject*)userData, "__update__", "(K)", missed);
   Py_XDECREF(result);
 }
 
