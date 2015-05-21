@@ -1027,7 +1027,7 @@ int renderman_add_so(Scene* scene, SceneObject* so) {
   
   SceneData* sceneData = find_scene_data ( scene );
 
-  if ( 0 == scene->running && sceneData ) {
+  if ( 1 == scene->running && sceneData ) {
     if ( -1 == setup_so ( sceneData, so ) ) {
 
       log_message ( "error setting up so. removing." );
@@ -1057,7 +1057,7 @@ int renderman_remove_so(Scene* scene, SceneObject* so) {
   
   SceneData* sceneData = find_scene_data ( scene );
 
-  if ( 0 == scene->running && sceneData ) {
+  if ( 1 == scene->running && sceneData ) {
   
     tear_down_so ( sceneData, so );  
     list_remove_elem( so, sceneData->stageGbuffer );  
