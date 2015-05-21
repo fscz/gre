@@ -452,7 +452,6 @@ PyGRE_SceneObject_init(PyGRE_SceneObject *self, PyObject *args, PyObject *kwds)
   self->draw = draw;
 
   GREHandle drawHandle = ((PyGRE_Draw*)draw)->handle;
-
   self->handle = gre_create_so(stagebit, PyString_AsString(vShader), PyString_AsString(fShader), drawHandle);
 
   return 0;
@@ -636,11 +635,10 @@ PyGRE_Scene_add(PyGRE_Scene* self, PyObject *args, PyObject *kwds) {
     return NULL;
   }
 
-  Py_INCREF(so);
-
   GREHandle soHandle = ((PyGRE_SceneObject*)so)->handle;
 
-  gre_scene_add_so( self->handle, soHandle ); 
+  gre_scene_add_so( self->handle, soHandle );
+  Py_INCREF(so);
 
   Py_RETURN_NONE;
 }
@@ -663,9 +661,9 @@ PyGRE_Scene_remove(PyGRE_Scene* self, PyObject *args, PyObject *kwds) {
 
   GREHandle soHandle = ((PyGRE_SceneObject*)so)->handle;
 
-  gre_scene_remove_so ( self->handle, soHandle );
-
-  Py_DECREF(so);
+  if ( 0 == gre_scene_remove_so ( self->handle, soHandle ) ) {
+    Py_DECREF(so);
+  }
   
   Py_RETURN_NONE;
 }
