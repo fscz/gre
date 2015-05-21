@@ -1123,7 +1123,6 @@ int renderman_rendertask_setup(RenderContext* ctx) {
   glFrontFace(GL_CW);
   glCullFace(GL_BACK);
 
-  glDepthRangef(0.0f, 1.0f);
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
   glGenFramebuffers(2, sceneData->fbos);
@@ -1136,8 +1135,9 @@ int renderman_rendertask_setup(RenderContext* ctx) {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ctx->esContext->screenWidth, ctx->esContext->screenHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
   glBindTexture(GL_TEXTURE_2D, 0);
 
+  // RBO 0
   glBindRenderbuffer(GL_RENDERBUFFER, sceneData->rbos[0]);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32_OES, ctx->esContext->screenWidth, ctx->esContext->screenHeight);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, ctx->esContext->screenWidth, ctx->esContext->screenHeight);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);  
 
   glBindFramebuffer(GL_FRAMEBUFFER, sceneData->fbos[0]);
@@ -1429,7 +1429,7 @@ int renderman_rendertask_repeat(RepeatInfo* info, RenderContext* ctx) {
   glDisable(GL_CULL_FACE);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  render_stage(sceneData->stageOverlay, sceneData, so, soData, progKey, attribute, numAttributes, program, bufferKey, bufferHandle, iboKey, iboHandle, method, i, k);
+  render_stage(sceneData->stageOverlay, sceneData, so, soData, progKey, attribute, numAttributes, program, bufferKey, bufferHandle, iboKey, iboHandle, method, i, k);  
 
   //////////////////////////////////////////////////
   //////////////////////// STAGE Postprocessing
