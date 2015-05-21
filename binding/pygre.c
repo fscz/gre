@@ -400,11 +400,11 @@ typedef struct {
 
 static void
 PyGRE_SceneObject_dealloc(PyGRE_SceneObject* self) {  
-  
+
   if ( self->handle ) {
     gre_so_free( self->handle );
   }  
-  
+
   Py_XDECREF(self->vShader);
   Py_XDECREF(self->fShader);
   Py_XDECREF(self->draw);
@@ -583,7 +583,6 @@ static PyTypeObject PyGRE_SceneObjectType = {
 
 typedef struct {
   PyObject_HEAD
-  PyObject* sceneObjects;
   GREHandle handle;
 } PyGRE_Scene;
 
@@ -593,7 +592,6 @@ PyGRE_Scene_dealloc(PyGRE_Scene* self) {
     gre_scene_free( self->handle );
   }  
   
-  Py_XDECREF(self->sceneObjects);
   self->ob_type->tp_free((PyObject*)self);
 }
 
@@ -617,8 +615,6 @@ PyGRE_Scene_init(PyGRE_Scene *self, PyObject *args, PyObject *kwds) {
     return -1;
   }  
 
-  self->sceneObjects = PyList_New(100);
-
   self->handle = gre_scene_alloc();
 
   return 0;
@@ -640,11 +636,11 @@ PyGRE_Scene_add(PyGRE_Scene* self, PyObject *args, PyObject *kwds) {
     return NULL;
   }
 
+  Py_INCREF(so);
+
   GREHandle soHandle = ((PyGRE_SceneObject*)so)->handle;
 
-  gre_scene_add_so( self->handle, soHandle );
-  
-  PyList_Append(self->sceneObjects, so);
+  gre_scene_add_so( self->handle, soHandle ); 
 
   Py_RETURN_NONE;
 }
@@ -663,22 +659,13 @@ PyGRE_Scene_remove(PyGRE_Scene* self, PyObject *args, PyObject *kwds) {
   if (!PyObject_TypeCheck(so, &PyGRE_SceneObjectType)) {
     PyErr_SetString(PyExc_AttributeError, "invalid parameters, remove accepts a SceneObject as input");
     return NULL;
-  }   
-
-  Py_ssize_t rmIndex = PySequence_Index(self->sceneObjects, so);
-
-  if ( rmIndex >= 0 ) {
-
-    GREHandle soHandle = ((PyGRE_SceneObject*)so)->handle;
-
-    PySequence_DelItem( self->sceneObjects, rmIndex );
-    
-    gre_scene_remove_so ( self->handle, soHandle );
-  } else {
-    
-    PyErr_SetString(PyExc_AttributeError, "could not remove \"SceneObject\", not found");
-    return NULL;
   }
+
+  GREHandle soHandle = ((PyGRE_SceneObject*)so)->handle;
+
+  gre_scene_remove_so ( self->handle, soHandle );
+
+  Py_DECREF(so);
   
   Py_RETURN_NONE;
 }

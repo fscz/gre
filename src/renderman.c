@@ -168,8 +168,6 @@ static SceneData* alloc_scene_data (Scene* scene) {
   sd->countTextureUsers = hashmap_alloc();
 
   sd->mapSo2SoData = hashmap_alloc();
-  sd->addSceneObjects = list_alloc();
-  sd->removeSceneObjects = list_alloc();
 
   sd->stageGbuffer = list_alloc();
   sd->stageLight = list_alloc();
@@ -243,8 +241,6 @@ static void free_scene_data (Scene* scene) {
     hashmap_free (sceneData->countTextureUsers);
 
     hashmap_free (sceneData->mapSo2SoData);
-    list_free (sceneData->addSceneObjects);
-    list_free (sceneData->removeSceneObjects);
 
     list_free (sceneData->stageGbuffer);
     list_free (sceneData->stageLight);
@@ -771,10 +767,10 @@ static int tear_down_index_buffer (SceneData* sceneData, SceneObject* so, SoData
   Draw* method = so->draw;
 
   char bufferKey[KEYSIZE];
+
   Attribute* indices = method->indices;
   GLuint bufferHandle;
   size_t bufferUsers;
-
 
   if ( indices && 1 == indices->useBuffer ) {
     snprintf (bufferKey, KEYSIZE, "%p", indices);
@@ -784,9 +780,7 @@ static int tear_down_index_buffer (SceneData* sceneData, SceneObject* so, SoData
     if ( 0 == bufferUsers ) {
 
       bufferHandle = (GLuint)hashmap_find ( bufferKey, sceneData->mapBuffer2Handle );
-
       glDeleteBuffers ( 1, &bufferHandle );
-
       hashmap_delete ( bufferKey, sceneData->mapBuffer2Handle );
       hashmap_delete ( bufferKey, sceneData->countBufferUsers );
       list_remove_elem ( (void*)bufferHandle, sceneData->listBuffers );
@@ -1030,37 +1024,53 @@ void renderman_snapshot(Scene* scene, size_t x, size_t y, size_t width, size_t h
 }
 
 int renderman_add_so(Scene* scene, SceneObject* so) {
+  
+  SceneData* sceneData = find_scene_data ( scene );
 
+  if ( 0 == scene->running && sceneData ) {
+    if ( -1 == setup_so ( sceneData, so ) ) {
 
-  if ( 1 == scene->running ) {
-    SceneData* sceneData = find_scene_data ( scene );
-    list_add ( so, sceneData->addSceneObjects );
-    return 0;
+      log_message ( "error setting up so. removing." );
+      
+      tear_down_so ( sceneData, so );
 
+    } else {
+
+      if ( (1 & so->stage) == 1) list_add( so, sceneData->stageGbuffer);
+      if ( (2 & so->stage) == 2) list_add( so, sceneData->stageLight);
+      if ( (4 & so->stage) == 4) list_add( so, sceneData->stageGeometry);
+      if ( (8 & so->stage) == 8) list_add( so, sceneData->stageParticle);
+      if ( (16 & so->stage) == 16) list_add( so, sceneData->stageOverlay);
+
+    }
   } else {
 
-    list_add ( so, scene->initialObjects );
-    return 0;
+    list_add( so, scene->initialObjects );
+
   }
   
-  return -1;
+  return 0;
 }
 
 
 int renderman_remove_so(Scene* scene, SceneObject* so) {
+  
+  SceneData* sceneData = find_scene_data ( scene );
 
-  if ( 1 == scene->running ) {
-
-    SceneData* sceneData = find_scene_data ( scene );
-    list_add ( so, sceneData->removeSceneObjects );
-    return 0;
+  if ( 0 == scene->running && sceneData ) {
+  
+    tear_down_so ( sceneData, so );  
+    list_remove_elem( so, sceneData->stageGbuffer );  
+    list_remove_elem( so, sceneData->stageLight );
+    list_remove_elem( so, sceneData->stageGeometry );
+    list_remove_elem( so, sceneData->stageParticle );
+    list_remove_elem( so, sceneData->stageOverlay );
 
   } else {
-    
-    return list_remove_elem ( so, scene->initialObjects );
+    list_remove_elem ( so, scene->initialObjects );
   }
 
-  return -1;
+  return 0;
 }
 
 
@@ -1169,17 +1179,20 @@ int renderman_rendertask_setup(RenderContext* ctx) {
 
     so = list_get ( i, ctx->scene->initialObjects );
     if ( -1 == setup_so ( sceneData, so ) ) {
+
       log_message ( "error setting up so. removing." );
       
       tear_down_so ( sceneData, so );
-      continue;
-    }
 
-    if ( (1 & so->stage) == 1) list_add( so, sceneData->stageGbuffer);
-    if ( (2 & so->stage) == 2) list_add( so, sceneData->stageLight);
-    if ( (4 & so->stage) == 4) list_add( so, sceneData->stageGeometry);
-    if ( (8 & so->stage) == 8) list_add( so, sceneData->stageParticle);
-    if ( (16 & so->stage) == 16) list_add( so, sceneData->stageOverlay);
+    } else {
+
+      if ( (1 & so->stage) == 1) list_add( so, sceneData->stageGbuffer);
+      if ( (2 & so->stage) == 2) list_add( so, sceneData->stageLight);
+      if ( (4 & so->stage) == 4) list_add( so, sceneData->stageGeometry);
+      if ( (8 & so->stage) == 8) list_add( so, sceneData->stageParticle);
+      if ( (16 & so->stage) == 16) list_add( so, sceneData->stageOverlay);
+
+    }
   }
   list_clear ( ctx->scene->initialObjects );
   
@@ -1294,44 +1307,6 @@ int renderman_rendertask_repeat(RepeatInfo* info, RenderContext* ctx) {
   
   int i;
   int k;
-
-  for (i = 0; i < list_size(sceneData->removeSceneObjects); i++) {
-
-    so = list_get(i, sceneData->removeSceneObjects );
-    tear_down_so ( sceneData, so );
-      
-    list_remove_elem( so, sceneData->stageGbuffer );
-    list_remove_elem( so, sceneData->stageLight );
-    list_remove_elem( so, sceneData->stageGeometry );
-    list_remove_elem( so, sceneData->stageParticle );
-    list_remove_elem( so, sceneData->stageOverlay );
-  }    
-
-  if ( 0 < list_size( sceneData->removeSceneObjects ) ) {
-    list_clear ( sceneData->removeSceneObjects );
-  }
-
-  for (i = 0; i < list_size(sceneData->addSceneObjects); i++) {    
-      
-    so = list_get(i, sceneData->addSceneObjects );
-      
-    if ( -1 == setup_so ( sceneData, so ) ) {
-      log_message ( "error: failed to setup new scene object" );
-      continue;
-    }
-
-    if ( (1 & so->stage) == 1) list_add( so, sceneData->stageGbuffer);
-    if ( (2 & so->stage) == 2) list_add( so, sceneData->stageLight);
-    if ( (4 & so->stage) == 4) list_add( so, sceneData->stageGeometry);
-    if ( (8 & so->stage) == 8) list_add( so, sceneData->stageParticle);
-    if ( (16 & so->stage) == 16) list_add( so, sceneData->stageOverlay);
-  }
-
-
-  if ( 0 < list_size( sceneData->addSceneObjects ) ) {
-    list_clear ( sceneData->addSceneObjects );
-  }
-
   
   //////////////////////////////////////////////////
   //////////////////////// STAGE Gbuffer
