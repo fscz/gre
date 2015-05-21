@@ -686,7 +686,9 @@ static int setup_textures (SceneData* sceneData, SceneObject* so, SoData* soData
       list_add ( (void*)textureHandle, sceneData->listTextures );
     }
     
-    list_add ( uniform, soData->textures );
+    if ( TEXTURE_HANDLE_GBUFFER != uniform->textureHandle && TEXTURE_HANDLE_LIGHTBUFFER != uniform->textureHandle ) {
+      list_add ( uniform, soData->textures );
+    }
   }
 
 
@@ -1057,14 +1059,21 @@ int renderman_remove_so(Scene* scene, SceneObject* so) {
   
   SceneData* sceneData = find_scene_data ( scene );
 
-  if ( 1 == scene->running && sceneData ) {
-  
-    tear_down_so ( sceneData, so );  
+  if ( 1 == scene->running ) {
+
+    if ( !sceneData ) return -1;
+    
+    SoData* soData = find_so_data ( sceneData, so );
+
+    if ( !soData ) return -1;
+    
     list_remove_elem( so, sceneData->stageGbuffer );  
     list_remove_elem( so, sceneData->stageLight );
     list_remove_elem( so, sceneData->stageGeometry );
     list_remove_elem( so, sceneData->stageParticle );
     list_remove_elem( so, sceneData->stageOverlay );
+
+    tear_down_so ( sceneData, so );  
 
   } else {
     list_remove_elem ( so, scene->initialObjects );
