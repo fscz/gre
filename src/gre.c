@@ -313,10 +313,6 @@ int gre_scene_remove_so(GREHandle sceneHandle, GREHandle soHandle) {
   return renderman_remove_so (scene, so);
 }
 
-int gre_scene_set_camera(GREHandle sceneHandle, Camera* camera) {
-  return 0;
-}
-
 void gre_scene_snapshot(GREHandle sceneHandle, size_t x, size_t y, size_t width, size_t height, char* buffer) {
   Scene* scene = (Scene*)sceneHandle;
   renderman_snapshot( scene, x, y, width, height, buffer );

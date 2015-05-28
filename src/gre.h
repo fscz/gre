@@ -1,6 +1,83 @@
 #ifndef gre_gre_h
 #define gre_gre_h
 
+/****************************************************************************
+ * Copyright (C) 2015 by Fabian Schuetz                                     *
+ *                                                                          *
+ * This file is part of Box.                                                *
+ *                                                                          *
+ *   Box is free software: you can redistribute it and/or modify it         *
+ *   under the terms of the GNU Lesser General Public License as published  *
+ *   by the Free Software Foundation, either version 3 of the License, or   *
+ *   (at your option) any later version.                                    *
+ *                                                                          *
+ *   Box is distributed in the hope that it will be useful,                 *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of         *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the          *
+ *   GNU Lesser General Public License for more details.                    *
+ *                                                                          *
+ *   You should have received a copy of the GNU Lesser General Public       *
+ *   License along with Box.  If not, see <http://www.gnu.org/licenses/>.   *
+ ****************************************************************************/
+
+/**
+ * @file gre.h
+ * @author Fabian Schuetz
+ * @date 28 Mai 2015
+ * @brief gre - generic render engine api include file
+ *
+ * gre is a lightweight 3d capable opengl es 2.0 render engine for the 
+ * Raspberry Pi.
+ *
+ * It abstracts away many details of the render pipeline by providing
+ * a single concise api file <gre.h>. In particular you never have to
+ * call a gl-function, create or delete framebuffers, vertex buffers 
+ * and so on. 
+ *
+ * gre operates on the following core types:
+ * : Attribute - An opengl Attribute. gre also offers automatic buffering.
+ * : Uniform - An opengl Uniform. A Uniform can be a texture, any float/int based data.
+ * : Shader - A Shader is a char*
+ * : SceneObject - A SceneObject is a { 
+ *                        vertexShader:Shader, 
+ *                        fragmentShader:Shader, 
+ *                        uniforms:map<char*,Uniform>, 
+ *                        attributes:map<char*,Attribute>,
+ *                        drawMethod:Draw }
+ * : Draw - A value holder struct that details how a SceneObject is drawn (GL_TRIANGLES,etc)
+ * : Scene - A Scene is essentially a list of SceneObjects and some internal state values
+ * 
+ * The above types are normally created by calling one the gre_[type]_alloc or gre_create_[type]
+ * functions. The latter are convenience functions that are composed of simpler functions.
+ * gre_create_[type] and gre_[type]_alloc functions return a GREHandle that is subsequently used
+ * to refer to the object. 
+ *
+ * This requires some explanation: OpenGL defines different types of objects the lifecycle
+ * of wich needs to be managed by the programmer. Such objects include Framebuffers, Renderbuffers,
+ * Vertex Buffers, Textures and so on. Such objects generally need to be created, setup and filled 
+ * with data. In many cases data needs to be transferred from main memory to the graphics card. 
+ * This is especially true for Vertex Buffers and Textures. A programmer thus has to manage data
+ * on both the graphics card and the main memory. gre abstracts the management of graphics memory
+ * away by allocating the respective GL objects automatically, when they are needed. 
+ *
+ * For example when rendering a mesh, vertex data is usually a large buffer of positions, normals and
+ * so on. This data is automatically transferred to the graphics card, if a SceneObject is setup with
+ * 1. An Attribute object in its attributes map and 2. it's vertex shader requires the attribute. 
+ * By passing the buffered=true flag on the Attribute object it is indicated that data should not be 
+ * transferred on every draw call, rather it is transferred once and stored on the graphics card.
+ * 
+ * Following this idea of buffering data on the graphics card, it is desirable to reuse buffers. For different
+ * Scene Objects. It is quite common for example to reuse the same mesh data for multiple objects in a scene.
+ * gre allows that by using the same GREHandle for the given Attribute on multiple Scene Objects. 
+ *
+ * The same mechanism works for shaders and Textures. 
+ * 
+ * gre performs reference counting for users of Vertex Buffers and Textures and so on. If the number of users falls
+ * to 0, the object is also automatically cleared from the graphics card.
+ * 
+ */
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,6 +87,9 @@
 #include "types.h"
 #include "util.h"
 
+/*******************************************************************************
+ * DEFINITIONS
+/******************************************************************************/
 typedef size_t GREHandle;
 typedef size_t GREenum;
 
@@ -51,22 +131,26 @@ typedef size_t GREenum;
 #define FRAMERATE_30 33333333
 #define FRAMERATE_60 16666666
 
-
+/*******************************************************************************
+ * INIT/TEAR-DOWN
+/******************************************************************************/
 int gre_initialize();
 int gre_tear_down();
-int gre_get_screen_size(size_t* width, size_t* height);
 
-
+/*******************************************************************************
+ * SCENE
+/******************************************************************************/
 GREHandle gre_scene_alloc();
 void gre_scene_free(GREHandle sceneHandle);
 int gre_scene_add_so(GREHandle sceneHandle, GREHandle soHandle);
 int gre_scene_remove_so(GREHandle sceneHandle, GREHandle soHandle);
-int gre_scene_set_camera(GREHandle sceneHandle, Camera* camera);
 int gre_scene_start(GREHandle sceneHandle, size_t fps, void (*updateFunc) (void* userData, unsigned long long), void* userData);
 int gre_scene_stop(GREHandle sceneHandle);
 void gre_scene_snapshot(GREHandle sceneHandle, size_t x, size_t y, size_t width, size_t height, char* buffer);
 
-
+/*******************************************************************************
+ * ATTRIBUTE
+/******************************************************************************/
 GREHandle gre_attribute_alloc();
 void gre_attribute_free(GREHandle attributeHandle);
 void gre_attribute_data_set(GREHandle attributeHandle, void* data);
@@ -80,7 +164,9 @@ size_t gre_attribute_num_components_get(GREHandle attributeHandle);
 void gre_attribute_use_buffer_set(GREHandle attributeHandle, uint useBuffer);
 uint gre_attribute_use_buffer_get(GREHandle attributeHandle);
 
-
+/*******************************************************************************
+ * UNIFORM
+/******************************************************************************/
 GREHandle gre_uniform_alloc();
 void gre_uniform_free(GREHandle uniformHandle);
 void gre_uniform_data_set(GREHandle uniformHandle, void* data);
@@ -98,7 +184,9 @@ uint gre_uniform_texture_handle_get(GREHandle uniformHandle);
 void gre_uniform_sample_mode_set(GREHandle uniformHandle, GREenum sampleMode);
 GREenum gre_uniform_sample_mode_get(GREHandle uniformHandle);
 
-
+/*******************************************************************************
+ * DRAW
+/******************************************************************************/
 GREHandle gre_draw_alloc();
 void gre_draw_free(GREHandle drawHandle);
 void gre_draw_type_set(GREHandle drawHandle, GREenum type);
@@ -110,7 +198,9 @@ size_t gre_draw_start_get(GREHandle drawHandle);
 void gre_draw_indices_set(GREHandle drawHandle, GREHandle attributeHandle);
 GREHandle gre_draw_indices_get(GREHandle drawHandle);
 
-
+/*******************************************************************************
+ * SCENEOBJECT
+/******************************************************************************/
 GREHandle gre_so_alloc();
 void gre_so_free(GREHandle soHandle);
 void gre_so_attribute_set(GREHandle soHandle, const char* name, GREHandle attributeHandle);
@@ -120,7 +210,9 @@ GREHandle gre_so_uniform_get(GREHandle soHandle, const char* name);
 void gre_so_vshader_set(GREHandle soHandle, const char* vShader);
 void gre_so_fshader_set(GREHandle soHandle, const char* fShader);
 
-
+/*******************************************************************************
+ * CREATORS
+/******************************************************************************/
 GREHandle gre_create_attribute(void* data, GREenum dataType, size_t size, size_t numComponents, uint useBuffer);
 GREHandle gre_create_uniform(void* data);
 GREHandle gre_create_uniform_texture(void* data, GREenum textureFormat, GREenum textureType, size_t width, size_t height, GREenum sampleMode);
@@ -129,11 +221,12 @@ GREHandle gre_create_draw_arrays(GREenum primitiveType, size_t start, size_t cou
 GREHandle gre_create_draw_elements(GREenum primitiveType, size_t start, size_t count, GREHandle attributeHandle);
 GREHandle gre_create_so(uint stage_bit, const char* vShader, const char* fShader, GREHandle drawHandle);
 
-
+/*******************************************************************************
+ * UTILITY
+/******************************************************************************/
 GREHandle gre_gbuffer_get();
 GREHandle gre_lightbuffer_get();
-
-
+int gre_get_screen_size(size_t* width, size_t* height);
 size_t gre_info_num_vshaders(GREHandle sceneHandle);
 size_t gre_info_num_fshaders(GREHandle sceneHandle);
 size_t gre_info_num_programs(GREHandle sceneHandle);
