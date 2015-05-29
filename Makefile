@@ -1,7 +1,7 @@
 CC = gcc
 AR = ar
 
-all: setup build_lib build_src build_binding copy
+all: setup lib/libgdsl.a build_src build_binding copy
 
 .PHONY: clean setup copy
 
@@ -19,11 +19,11 @@ clean:
 setup:
 	mkdir -p build/include
 
-build_lib:
+lib/libgdsl.a:
 	cd lib; make; 
 	cd lib; ar cr libgdsl.a gdsl-1.8/src/*.o
 
-build_src: build_lib
+build_src: lib/libgdsl.a
 	cd src; make
 
 build_binding: build_src
