@@ -5,7 +5,7 @@ is a lightweight 3d capable opengl es 2.0 render engine for the Raspberry Pi. It
 
 ###get and build 
 ```bash
-git clone...
+git clone https://github.com/fscz/gre.git
 cd gre
 ./configure
 make
@@ -14,7 +14,7 @@ make
 ###using gre
 #### Python
 gre comes with a python binding. The binding source is located in gre/binding/pygre.c.
-Make will build a file gre/build/pygre.so. With python you can import pygre like in the following example.
+Make will build a file gre/build/pygre.so. Copy this file to your local python project folder and import it like in the following example.
 
 ```python
 from pygre import Attribute, Uniform, Draw, SceneObject, Scene, Display
