@@ -1,8 +1,8 @@
-all: make
+all: src
 
 clean:
-	for x in $(ls -d */); do cd $(x); make clean; done
+	@for lib in $$(ls -d */); do cd $${lib}; make clean; cd -; done
 
-make:
-	for x in $(ls -d */); do cd $(x); make; done
+src:
+	@for lib in $$(ls -d */); do cd $${lib}; make; cd -; done
 
