@@ -703,14 +703,14 @@ PyGRE_Scene_stop(PyGRE_Scene* self, PyObject *args, PyObject *kwds) {
 }
 
 static PyObject* 
-PyGRE_Scene_snapshot(PyGRE_Scene* self, PyObject *args, PyObject * kwds) {
+PyGRE_Scene_screenshot(PyGRE_Scene* self, PyObject *args, PyObject * kwds) {
 
   static char *kwlist[] = {"x", "y", "width", "height", NULL};
 
   size_t x, y, width, height;
 
   if ( !PyArg_ParseTupleAndKeywords(args, kwds, "IIII", kwlist, &x, &y, &width, &height ) ) {
-    PyErr_SetString(PyExc_AttributeError, "invalid parameters, snapshot accepts 4 integers: x, y, width, height");
+    PyErr_SetString(PyExc_AttributeError, "invalid parameters, screenshot accepts 4 integers: x, y, width, height");
     return NULL;
   }
 
@@ -733,7 +733,7 @@ static PyMemberDef PyGRE_Scene_members[] = {
 static PyMethodDef PyGRE_Scene_methods[] = {
   {"add", (PyCFunction)PyGRE_Scene_add, METH_VARARGS, "add a scene object" },
   {"remove", (PyCFunction)PyGRE_Scene_remove, METH_VARARGS, "remove a scene object" },
-{"snapshot", (PyCFunction)PyGRE_Scene_snapshot, METH_VARARGS, "snapshot the current display" },
+  {"screenshot", (PyCFunction)PyGRE_Scene_screenshot, METH_VARARGS, "screenshot the current display" },
   {"update", (PyCFunction)PyGRE_Scene_update, METH_VARARGS, "update callback" },
   {"start", (PyCFunction)PyGRE_Scene_start, METH_VARARGS, "start rendering a scene" },
   {"stop", (PyCFunction)PyGRE_Scene_stop, METH_VARARGS, "stop rendering a scene" },
@@ -781,7 +781,6 @@ static PyTypeObject PyGRE_SceneType = {
   0,                         /* tp_alloc */
   PyType_GenericNew,                 /* tp_new */
 };
-
 
 
 //////////////////////////////////////////////////////////

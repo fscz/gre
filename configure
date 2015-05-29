@@ -1,0 +1,6 @@
+#!/bin/bash
+
+#libgdsl
+cd lib/gdsl-1.8
+./configure
+cd -

@@ -1,10 +1,7 @@
 CC = gcc
 AR = ar
-CFLAGS = -Wall -g -O3 -I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux/ -Iinclude
-LDFLAGS = -shared -L/opt/vc/lib -lGLESv2 -lEGL -lbcm_host -pthread -lm
-objects := $(patsubst %.c,%.o,$(wildcard src/*.c))
 
-all: setup build_src build_binding copy
+all: setup build_lib build_src build_binding copy
 
 .PHONY: clean setup copy
 
@@ -22,8 +19,11 @@ clean:
 setup:
 	mkdir -p build/include
 
+build_lib:
+	cd lib; make; 
+	cd lib; ar cr libgdsl.a gdsl-1.8/src/*.o
 
-build_src:
+build_src: build_lib
 	cd src; make
 
 build_binding: build_src
@@ -36,7 +36,6 @@ install: build/libgre.so
 
 copy:
 	cp src/*.h  build/include
-	cp src/libgre.a build
 	cp src/libgre.so build
 	cp binding/pygre.so build
 
